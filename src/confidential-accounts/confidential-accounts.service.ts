@@ -9,10 +9,14 @@ import {
   EventIdEnum,
   Identity,
   IncomingConfidentialAssetBalance,
+  MoveFundsParams,
   ResultSet,
 } from '@polymeshassociation/polymesh-private-sdk/types';
 
+import { FundMovesDto } from '~/confidential-accounts/dto/fund-moves.dto';
+import { MoveFundsDto } from '~/confidential-accounts/dto/move-funds.dto';
 import { ConfidentialAssetBalanceModel } from '~/confidential-accounts/models/confidential-asset-balance.model';
+import { ConfidentialProofsService } from '~/confidential-proofs/confidential-proofs.service';
 import { ConfidentialTransactionDirectionEnum } from '~/confidential-transactions/types';
 import { PolymeshService } from '~/polymesh/polymesh.service';
 import { TransactionBaseDto } from '~/polymesh-rest-api/src/common/dto/transaction-base-dto';
@@ -24,7 +28,8 @@ import { handleSdkError } from '~/transactions/transactions.util';
 export class ConfidentialAccountsService {
   constructor(
     private readonly polymeshService: PolymeshService,
-    private readonly transactionsService: TransactionsService
+    private readonly transactionsService: TransactionsService,
+    private readonly confidentialProofsService: ConfidentialProofsService
   ) {}
 
   public async findOne(publicKey: string): Promise<ConfidentialAccount> {
@@ -151,5 +156,62 @@ export class ConfidentialAccountsService {
     const account = await this.findOne(confidentialAccount);
 
     return account.getTransactionHistory(filters);
+  }
+
+  public async moveFunds(params: MoveFundsDto): ServiceReturn<void> {
+    const { options, args } = extractTxOptions(params);
+    const { fundMoves } = args;
+
+    const confidentialAccounts = this.polymeshService.polymeshApi.confidentialAccounts;
+
+    const moves = await Promise.all(
+      fundMoves.map(async fundMove => {
+        const moveFundsParams = await this.fundMoveToMoveFundsParams(fundMove);
+
+        return moveFundsParams;
+      })
+    );
+
+    return this.transactionsService.submit(confidentialAccounts.moveFunds, moves, options);
+  }
+
+  private async fundMoveToMoveFundsParams(fundMove: FundMovesDto): Promise<MoveFundsParams> {
+    const { from, to, assetMoves } = fundMove;
+
+    const [fromAccount, toAccount] = await Promise.all([this.findOne(from), this.findOne(to)]);
+
+    const proofs = await Promise.all(
+      assetMoves.map(async ({ confidentialAsset, amount }) => {
+        const assetBalance = await this.getAssetBalance(from, confidentialAsset);
+        const asset =
+          await this.polymeshService.polymeshApi.confidentialAssets.getConfidentialAsset({
+            id: confidentialAsset,
+          });
+
+        const { auditors } = await asset.getAuditors();
+
+        const proof = await this.confidentialProofsService.generateSenderProof(
+          fromAccount.publicKey,
+          {
+            amount,
+            auditors: auditors.map(auditor => auditor.publicKey),
+            receiver: toAccount.publicKey,
+            encryptedBalance: assetBalance.balance,
+          }
+        );
+
+        return {
+          asset,
+          amount,
+          proof,
+        };
+      })
+    );
+
+    return {
+      from: fromAccount,
+      to: toAccount,
+      proofs,
+    };
   }
 }

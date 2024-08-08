@@ -17,7 +17,7 @@ import { ConfidentialProofsService } from '~/confidential-proofs/confidential-pr
 import { ConfidentialTransactionsService } from '~/confidential-transactions/confidential-transactions.service';
 import * as confidentialTransactionsUtilModule from '~/confidential-transactions/confidential-transactions.util';
 import { ObserverAffirmConfidentialTransactionDto } from '~/confidential-transactions/dto/observer-affirm-confidential-transaction.dto';
-import { SenderAffirmConfidentialTransactionDto } from '~/confidential-transactions/dto/sender-affirm-confidential-transaction.dto copy';
+import { SenderAffirmConfidentialTransactionDto } from '~/confidential-transactions/dto/sender-affirm-confidential-transaction.dto';
 import { ConfidentialAssetAuditorModel } from '~/confidential-transactions/models/confidential-asset-auditor.model';
 import { ConfidentialTransactionModel } from '~/confidential-transactions/models/confidential-transaction.model';
 import { ExtendedIdentitiesService } from '~/extended-identities/identities.service';

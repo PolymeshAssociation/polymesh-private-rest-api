@@ -9,8 +9,10 @@ import {
   ResultSet,
   TxTags,
 } from '@polymeshassociation/polymesh-private-sdk/types';
+import { when } from 'jest-when';
 
 import { ConfidentialAccountsService } from '~/confidential-accounts/confidential-accounts.service';
+import { ConfidentialProofsService } from '~/confidential-proofs/confidential-proofs.service';
 import { ConfidentialTransactionDirectionEnum } from '~/confidential-transactions/types';
 import { POLYMESH_API } from '~/polymesh/polymesh.consts';
 import { PolymeshModule } from '~/polymesh/polymesh.module';
@@ -23,7 +25,11 @@ import {
   MockPolymesh,
   MockTransaction,
 } from '~/test-utils/mocks';
-import { mockTransactionsProvider, MockTransactionsService } from '~/test-utils/service-mocks';
+import {
+  mockConfidentialProofsServiceProvider,
+  mockTransactionsProvider,
+  MockTransactionsService,
+} from '~/test-utils/service-mocks';
 import { TransactionsService } from '~/transactions/transactions.service';
 import * as transactionsUtilModule from '~/transactions/transactions.util';
 
@@ -34,6 +40,7 @@ describe('ConfidentialAccountsService', () => {
   let mockPolymeshApi: MockPolymesh;
   let polymeshService: PolymeshService;
   let mockTransactionsService: MockTransactionsService;
+  let mockConfidentialProofsService: DeepMocked<ConfidentialProofsService>;
   const confidentialAccount = 'SOME_PUBLIC_KEY';
 
   beforeEach(async () => {
@@ -41,7 +48,11 @@ describe('ConfidentialAccountsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [PolymeshModule],
-      providers: [ConfidentialAccountsService, mockTransactionsProvider],
+      providers: [
+        ConfidentialAccountsService,
+        mockTransactionsProvider,
+        mockConfidentialProofsServiceProvider,
+      ],
     })
       .overrideProvider(POLYMESH_API)
       .useValue(mockPolymeshApi)
@@ -50,6 +61,8 @@ describe('ConfidentialAccountsService', () => {
     mockPolymeshApi = module.get<MockPolymesh>(POLYMESH_API);
     polymeshService = module.get<PolymeshService>(PolymeshService);
     mockTransactionsService = module.get<MockTransactionsService>(TransactionsService);
+    mockConfidentialProofsService =
+      module.get<typeof mockConfidentialProofsService>(ConfidentialProofsService);
 
     service = module.get<ConfidentialAccountsService>(ConfidentialAccountsService);
   });
@@ -358,6 +371,71 @@ describe('ConfidentialAccountsService', () => {
       });
 
       expect(result).toEqual(mockHistory);
+    });
+  });
+
+  describe('moveFunds', () => {
+    it('create a transaction and return service result', async () => {
+      const mockFromAccount = createMockConfidentialAccount();
+      const mockToAccount = createMockConfidentialAccount();
+      const mockAuditorAccount = createMockConfidentialAccount();
+      const amount = new BigNumber(1000);
+      const balance = '0x0';
+
+      const mockAsset = createMockConfidentialAsset({
+        id: '0xassetId',
+        getAuditors: jest.fn().mockResolvedValue({ auditors: [mockAuditorAccount] }),
+      });
+
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockFromAccount);
+      when(service.findOne).calledWith(mockToAccount.uuid).mockResolvedValue(mockToAccount);
+
+      jest
+        .spyOn(service, 'getAssetBalance')
+        .mockResolvedValue({ confidentialAsset: mockAsset.id, balance });
+
+      when(polymeshService.polymeshApi.confidentialAssets.getConfidentialAsset)
+        .calledWith({ id: mockAsset.id })
+        .mockResolvedValue(mockAsset);
+      when(mockConfidentialProofsService.generateSenderProof)
+        .calledWith(mockFromAccount.publicKey, {
+          amount,
+          encryptedBalance: balance,
+          auditors: [mockAuditorAccount.publicKey],
+          receiver: mockToAccount.publicKey,
+        })
+        .mockResolvedValue('proof');
+
+      const input = {
+        signer,
+        fundMoves: [
+          {
+            from: mockFromAccount.uuid,
+            to: mockToAccount.uuid,
+            assetMoves: [{ confidentialAsset: mockAsset.id, amount }],
+          },
+        ],
+      };
+
+      const mockTransactions = {
+        blockHash: '0x1',
+        txHash: '0x2',
+        blockNumber: new BigNumber(1),
+        tag: TxTags.confidentialAsset.MoveAssets,
+      };
+      const mockTransaction = new MockTransaction(mockTransactions);
+
+      mockTransactionsService.submit.mockResolvedValue({
+        result: undefined,
+        transactions: [mockTransaction],
+      });
+
+      const result = await service.moveFunds(input);
+
+      expect(result).toEqual({
+        result: undefined,
+        transactions: [mockTransaction],
+      });
     });
   });
 });

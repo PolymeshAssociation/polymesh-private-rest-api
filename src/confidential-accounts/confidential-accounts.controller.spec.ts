@@ -224,4 +224,25 @@ describe('ConfidentialAccountsController', () => {
       );
     });
   });
+
+  describe('moveFunds', () => {
+    it('should call the service and return the results', async () => {
+      const input = {
+        signer,
+        fundMoves: [
+          {
+            from: '0xfrom',
+            to: '0xto',
+            assetMoves: [{ confidentialAsset: 'someAsset', amount: new BigNumber(1000) }],
+          },
+        ],
+      };
+      mockConfidentialAccountsService.moveFunds.mockResolvedValue(
+        txResult as unknown as ServiceReturn<void>
+      );
+
+      const result = await controller.moveFunds(input);
+      expect(result).toEqual(txResult);
+    });
+  });
 });

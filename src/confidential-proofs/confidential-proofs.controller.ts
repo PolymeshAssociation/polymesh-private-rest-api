@@ -23,7 +23,7 @@ import { AuditorVerifyTransactionModel } from '~/confidential-proofs/models/audi
 import { DecryptedBalanceModel } from '~/confidential-proofs/models/decrypted-balance.model';
 import { SenderProofVerificationResponseModel } from '~/confidential-proofs/models/sender-proof-verification-response.model';
 import { ConfidentialTransactionsService } from '~/confidential-transactions/confidential-transactions.service';
-import { SenderAffirmConfidentialTransactionDto } from '~/confidential-transactions/dto/sender-affirm-confidential-transaction.dto copy';
+import { SenderAffirmConfidentialTransactionDto } from '~/confidential-transactions/dto/sender-affirm-confidential-transaction.dto';
 import { IdParamsDto } from '~/polymesh-rest-api/src/common/dto/id-params.dto';
 import { TransactionQueueModel } from '~/polymesh-rest-api/src/common/models/transaction-queue.model';
 import {

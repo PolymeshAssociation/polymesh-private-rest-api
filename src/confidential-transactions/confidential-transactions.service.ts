@@ -19,7 +19,7 @@ import { AuditorVerifyProofModel } from '~/confidential-proofs/models/auditor-ve
 import { createConfidentialTransactionModel } from '~/confidential-transactions/confidential-transactions.util';
 import { CreateConfidentialTransactionDto } from '~/confidential-transactions/dto/create-confidential-transaction.dto';
 import { ObserverAffirmConfidentialTransactionDto } from '~/confidential-transactions/dto/observer-affirm-confidential-transaction.dto';
-import { SenderAffirmConfidentialTransactionDto } from '~/confidential-transactions/dto/sender-affirm-confidential-transaction.dto copy';
+import { SenderAffirmConfidentialTransactionDto } from '~/confidential-transactions/dto/sender-affirm-confidential-transaction.dto';
 import { ExtendedIdentitiesService } from '~/extended-identities/identities.service';
 import { PolymeshService } from '~/polymesh/polymesh.service';
 import { TransactionBaseDto } from '~/polymesh-rest-api/src/common/dto/transaction-base-dto';

@@ -12,6 +12,7 @@ import { IncomingConfidentialAssetBalance } from '@polymeshassociation/polymesh-
 
 import { ConfidentialAccountsService } from '~/confidential-accounts/confidential-accounts.service';
 import { ConfidentialAccountParamsDto } from '~/confidential-accounts/dto/confidential-account-params.dto';
+import { MoveFundsDto } from '~/confidential-accounts/dto/move-funds.dto';
 import { TransactionHistoryParamsDto } from '~/confidential-accounts/dto/transaction-history-params.dto';
 import { AppliedConfidentialAssetBalanceModel } from '~/confidential-accounts/models/applied-confidential-asset-balance.model';
 import { AppliedConfidentialAssetBalancesModel } from '~/confidential-accounts/models/applied-confidential-asset-balances.model';
@@ -330,5 +331,37 @@ export class ConfidentialAccountsController {
       total: count,
       next,
     });
+  }
+
+  @ApiOperation({
+    summary: 'Move funds between Confidential Accounts owned by the signing Identity',
+    description: 'This endpoint moves funds between Confidential Accounts of the Signing Identity',
+  })
+  @ApiNotFoundResponse({
+    description: 'No Confidential Account was found',
+  })
+  @ApiTransactionFailedResponse({
+    [HttpStatus.NOT_FOUND]: [
+      'The sending Confidential Account does not exist',
+      'The receiving Confidential Account does not exist',
+    ],
+    [HttpStatus.UNPROCESSABLE_ENTITY]: [
+      'The provided accounts must have identities associated with them',
+      'Only the owner of the sender account can move funds',
+      'The provided accounts must have the same identity',
+      'Confidential Assets that do not exist were provided',
+      'Assets are frozen for trading',
+      'The sender account is frozen for trading specified asset',
+      'The receiver account is frozen for trading specified asset',
+    ],
+  })
+  @ApiTransactionResponse({
+    description: 'Details about the transaction',
+  })
+  @Post('move-funds')
+  public async moveFunds(@Body() args: MoveFundsDto): Promise<TransactionResponseModel> {
+    const result = await this.confidentialAccountsService.moveFunds(args);
+
+    return handleServiceResult(result);
   }
 }
