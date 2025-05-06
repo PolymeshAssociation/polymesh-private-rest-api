@@ -1,6 +1,6 @@
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { InstructionStatus } from '@polymeshassociation/polymesh-sdk/types';
+import { InstructionStatus } from '@polymeshassociation/polymesh-private-sdk/types';
 import request from 'supertest';
 
 import { AppModule } from '~/app.module';
@@ -179,7 +179,7 @@ describe('AppController (e2e)', () => {
           .get('/instructions/911')
           .expect(HttpStatus.OK)
           .expect({
-            status: InstructionStatus.Executed,
+            status: InstructionStatus.Success,
             eventIdentifier: {
               blockNumber: '2719172',
               blockDate: '2021-06-26T01:47:45.000Z',
