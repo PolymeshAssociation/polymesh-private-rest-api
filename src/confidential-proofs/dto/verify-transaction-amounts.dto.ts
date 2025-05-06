@@ -20,6 +20,7 @@ export class VerifyTransactionAmountsDto {
     description:
       'The expected amounts for each leg. Providing an amount is more efficient for the proof server',
     isArray: true,
+    type: LegAmountsDto,
   })
   @IsOptional()
   @IsArray()
